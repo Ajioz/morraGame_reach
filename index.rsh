@@ -28,20 +28,20 @@ assert(winner(TWO, ZERO, GUESSTWO, GUESSZERO) == A_WINS);
 assert(winner(ZERO, ONE, GUESSZERO, GUESSTWO) == DRAW);
 assert(winner(ONE, ONE, GUESSONE, GUESSONE) == DRAW);
 
-// assets for all combinations
+// asseting for all combinations
 forall(UInt, fingersA =>
   forall(UInt, fingersB =>
     forall(UInt, guessA =>
       forall(UInt, guessB =>
         assert(isOutcome(winner(fingersA, fingersB, guessA, guessB)))))));
 
-//  asserts for a draw - each guesses the same
+//  asserting for a draw - each guesses the same
 forall(UInt, (fingerA) =>
   forall(UInt, (fingerB) =>
     forall(UInt, (guess) =>
       assert(winner(fingerA, fingerB, guess, guess) == DRAW))));
 
-// added a timeout function
+// adding the timeout functionality
 const Player =
 {
   ...hasRandom,
@@ -52,7 +52,7 @@ const Player =
   informTimeout: Fun([], Null)
 };
 
-// added a wager function for Alice       
+// Let's add a wager function for Alice       
 const Alice =
 {
   ...Player,
@@ -60,7 +60,7 @@ const Alice =
   ...hasConsoleLogger
 };
 
-// added a acceptWager function for Bob
+// Let's add a acceptWager function for Bob
 const Bob =
 {
   ...Player,
@@ -68,11 +68,6 @@ const Bob =
   ...hasConsoleLogger
 };
 const DEADLINE = 30;
-
-// export const main = Reach.App({}, [Participant('Alice', Alice), Participant('Bob', Bob)], (A, B) => {
-//   const informTimeout = () => {
-//     each([A, B], () => { interact.informTimeout(); });
-//   };
 
 export const main = Reach.App(() => {
 
@@ -94,7 +89,7 @@ export const main = Reach.App(() => {
   var outcome = DRAW;
   invariant(balance() == 2 * wager && isOutcome(outcome));
 
-  // loop until we have a winner
+  // At this point we have to loop until we have a winner
   while (outcome == DRAW) {
     commit();
     A.only(() => {
@@ -102,9 +97,9 @@ export const main = Reach.App(() => {
       const _guessA = interact.getGuess(_fingersA);
       // log fingersA to frontend       
       interact.log(_fingersA);
-      // interact.log(_guessA);  
-      // We need Alice to be able to publish her fingers and guess, 
-      // but also keep it secret.  makeCommitment does this.    
+
+      // Should Alice be able to publish her fingers and guess would be great, so let's do it here, 
+      // meanwhile we must also keep it secret.  The makeCommitment method does this.    
 
       const [_commitA, _saltA] = makeCommitment(interact, _fingersA);
       const commitA = declassify(_commitA);
@@ -127,9 +122,8 @@ export const main = Reach.App(() => {
     B.only(() => {
 
       const _fingersB = interact.getFingers();
-      //    interact.log(_fingersB);
       const _guessB = interact.getGuess(_fingersB);
-      //    interact.log(_guessB);
+    
       const fingersB = declassify(_fingersB);
       const guessB = declassify(_guessB);
 
@@ -143,7 +137,7 @@ export const main = Reach.App(() => {
     ;
 
     commit();
-    // Alice will declassify the secret information
+    // Alice will declassify the secret information here
     A.only(() => {
       const [saltA, fingersA] = declassify([_saltA, _fingersA]);
       const [guessSaltA, guessA] = declassify([_guessSaltA, _guessA]);
@@ -151,7 +145,8 @@ export const main = Reach.App(() => {
     });
     A.publish(saltA, fingersA)
       .timeout(relativeTime(DEADLINE), () => closeTo(B, informTimeout));
-    // check that the published values match the original values.
+    
+      // It's time to check that the published values match the original values.
     checkCommitment(commitA, saltA, fingersA);
     commit();
 
@@ -176,7 +171,7 @@ export const main = Reach.App(() => {
 
   assert(outcome == A_WINS || outcome == B_WINS);
   
-  // send winnings to winner 
+  // Over here we are sending winnings to winner 
   transfer(2 * wager).to(outcome == A_WINS ? A : B);
   commit();
 
