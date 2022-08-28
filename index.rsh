@@ -1,182 +1,98 @@
+/* eslint-disable no-array-constructor */
+/* eslint-disable eqeqeq */
+/* eslint-disable no-loop-func */
+/* eslint-disable no-unused-vars */
+/* eslint-disable no-undef */
 'reach 0.1';
 
-const [isFingers, ZERO, ONE, TWO, THREE, FOUR, FIVE] = makeEnum(6);
+const [isOutcome, B_WINS, A_WINS, DRAW] = makeEnum(3);
 
-const [
-  isGuess, GUESSZERO, GUESSONE, GUESSTWO,
-  GUESSTHREE, GUESSFOUR, GUESSFIVE, GUESSSIX,
-  GUESSSEVEN, GUESSEIGHT, GUESSNINE, GUESSTEN
-] = makeEnum(11);
-
-const [isOutcome, B_WINS, DRAW, A_WINS] = makeEnum(3);
-
-// game logic
-const winner = (fingersA, fingersB, guessA, guessB) => {
-  if (guessA == guessB) {
-    return DRAW;                                        //tie
-  } else if (((fingersA + fingersB) == guessA)) {
-    return A_WINS;                                      // player A wins
-  } else if (((fingersA + fingersB) == guessB)) {
-    return B_WINS;                                      // player B wins
-  } else {
-    return DRAW;                                        // tie
-  }
+const winner = (guessA, fingersA, guessB, fingersB) => {
+  const total = fingersA + fingersB;
+  return total == guessA && total != guessB ? 1 : total == guessB && total != guessA ? 0 : 2;
 };
 
-assert(winner(ZERO, TWO, GUESSZERO, GUESSTWO) == B_WINS);
-assert(winner(TWO, ZERO, GUESSTWO, GUESSZERO) == A_WINS);
-assert(winner(ZERO, ONE, GUESSZERO, GUESSTWO) == DRAW);
-assert(winner(ONE, ONE, GUESSONE, GUESSONE) == DRAW);
-
-// asseting for all combinations
-forall(UInt, fingersA =>
-  forall(UInt, fingersB =>
-    forall(UInt, guessA =>
-      forall(UInt, guessB =>
-        assert(isOutcome(winner(fingersA, fingersB, guessA, guessB)))))));
-
-//  asserting for a draw - each guesses the same
-forall(UInt, (fingerA) =>
-  forall(UInt, (fingerB) =>
-    forall(UInt, (guess) =>
-      assert(winner(fingerA, fingerB, guess, guess) == DRAW))));
-
-// adding the timeout functionality
-const Player =
-{
+const common = {
   ...hasRandom,
-  getFingers: Fun([], UInt),
-  getGuess: Fun([UInt], UInt),
-  seeWinning: Fun([UInt], Null),
-  seeOutcome: Fun([UInt], Null),
-  informTimeout: Fun([], Null)
+  pickAndGuess: Fun([], Array(UInt, 2)),
+  declareWinner: Fun([UInt, UInt], Null),
+  informTimeout: Fun([], Null),
 };
-
-// Let's add a wager function for Alice       
-const Alice =
-{
-  ...Player,
-  wager: UInt,
-  ...hasConsoleLogger
-};
-
-// Let's add a acceptWager function for Bob
-const Bob =
-{
-  ...Player,
-  acceptWager: Fun([UInt], Null),
-  ...hasConsoleLogger
-};
-const DEADLINE = 30;
 
 export const main = Reach.App(() => {
-
-  const A = Participant('Alice', Alice);
-  const B = Participant('Bob', Bob);
+  const A = Participant('Alice', {
+    // We would do well to define Alice's interact interface 
+    ...common,
+    deadline: UInt,
+    wager: UInt,
+  });
+  const B = Participant('Bob', {
+    // Meanwhile we are going to states how Bob's interact interface looks
+    ...common,
+    acceptWager: Fun([UInt], Null),
+  });
   init();
+  // Let one of the players publish and deploys the contract
 
   const informTimeout = () => {
-    each([A, B], () => { interact.informTimeout(); });
+    each([A, B], () => {
+      interact.informTimeout();
+    });
   };
 
-  A.only(() => { const wager = declassify(interact.wager); });
-  A.publish(wager).pay(wager);
+  A.only(() => {
+    const deadline = declassify(interact.deadline);
+    const wager = declassify(interact.wager);
+  });
+  A.publish(deadline, wager).pay(wager);
   commit();
 
-  B.only(() => { interact.acceptWager(wager); });
-  B.pay(wager).timeout(relativeTime(DEADLINE), () => closeTo(A, informTimeout));
+  B.interact.acceptWager(wager);
+  B.pay(wager).timeout(relativeTime(deadline), () => closeTo(A, informTimeout));
 
-  var outcome = DRAW;
+  var [outcome, total] = [DRAW, 0];
   invariant(balance() == 2 * wager && isOutcome(outcome));
-
-  // At this point we have to loop until we have a winner
   while (outcome == DRAW) {
     commit();
     A.only(() => {
-      const _fingersA = interact.getFingers();
-      const _guessA = interact.getGuess(_fingersA);
-      // log fingersA to frontend       
-      interact.log(_fingersA);
-
-      // Should Alice be able to publish her fingers and guess would be great, so let's do it here, 
-      // meanwhile we must also keep it secret.  The makeCommitment method does this.    
-
-      const [_commitA, _saltA] = makeCommitment(interact, _fingersA);
-      const commitA = declassify(_commitA);
-      const [_guessCommitA, _guessSaltA] = makeCommitment(interact, _guessA);
-      const guessCommitA = declassify(_guessCommitA);
+      const [_fingersAlice, _guessAlice] = interact.pickAndGuess();
+      const [_fingersACommit, _fingersASalt] = makeCommitment(interact, _fingersAlice);
+      const fingersACommit = declassify(_fingersACommit);
+      const [_guessACommit, _guessASalt] = makeCommitment(interact, _guessAlice);
+      const guessACommit = declassify(_guessACommit);
     });
-
-    A.publish(commitA)
-      .timeout(relativeTime(DEADLINE), () => closeTo(B, informTimeout));
+    A.publish(fingersACommit, guessACommit).timeout(relativeTime(deadline), () => closeTo(B, informTimeout));
     commit();
 
-    A.publish(guessCommitA)
-      .timeout(relativeTime(DEADLINE), () => closeTo(B, informTimeout));
-    ;
-    commit();
-    // Bob does not know the values for Alice, but Alice does know the values 
-    unknowable(B, A(_fingersA, _saltA));
-    unknowable(B, A(_guessA, _guessSaltA));
-
+    unknowable(B, A(_fingersAlice, _fingersASalt));
+    unknowable(B, A(_guessAlice, _guessASalt));
     B.only(() => {
-
-      const _fingersB = interact.getFingers();
-      const _guessB = interact.getGuess(_fingersB);
-    
-      const fingersB = declassify(_fingersB);
-      const guessB = declassify(_guessB);
-
+      const [fingersBob, guessBob] = declassify(interact.pickAndGuess());
     });
-
-    B.publish(fingersB)
-      .timeout(relativeTime(DEADLINE), () => closeTo(A, informTimeout));
-    commit();
-    B.publish(guessB)
-      .timeout(relativeTime(DEADLINE), () => closeTo(A, informTimeout));
-    ;
-
-    commit();
-    // Alice will declassify the secret information here
-    A.only(() => {
-      const [saltA, fingersA] = declassify([_saltA, _fingersA]);
-      const [guessSaltA, guessA] = declassify([_guessSaltA, _guessA]);
-
-    });
-    A.publish(saltA, fingersA)
-      .timeout(relativeTime(DEADLINE), () => closeTo(B, informTimeout));
-    
-      // It's time to check that the published values match the original values.
-    checkCommitment(commitA, saltA, fingersA);
-    commit();
-
-    A.publish(guessSaltA, guessA)
-      .timeout(relativeTime(DEADLINE), () => closeTo(B, informTimeout));
-    checkCommitment(guessCommitA, guessSaltA, guessA);
-
+    B.publish(fingersBob, guessBob).timeout(relativeTime(deadline), () => closeTo(A, informTimeout));
     commit();
 
     A.only(() => {
-      const WinningNumber = fingersA + fingersB;
-      interact.seeWinning(WinningNumber);
+      const fingersAlice = declassify(_fingersAlice);
+      const fingersASalt = declassify(_fingersASalt);
+      const guessAlice = declassify(_guessAlice);
+      const guessASalt = declassify(_guessASalt);
     });
+    A.publish(fingersAlice, guessAlice, fingersASalt, guessASalt).timeout(relativeTime(deadline), () => closeTo(B, informTimeout));
+    checkCommitment(fingersACommit, fingersASalt, fingersAlice);
+    checkCommitment(guessACommit, guessASalt, guessAlice);
 
-    A.publish(WinningNumber)
-      .timeout(relativeTime(DEADLINE), () => closeTo(A, informTimeout));
-
-    outcome = winner(fingersA, fingersB, guessA, guessB);
+    [outcome, total] = [winner(guessAlice, fingersAlice, guessBob, fingersBob), fingersAlice + fingersBob];
     continue;
-
   }
 
   assert(outcome == A_WINS || outcome == B_WINS);
-  
-  // Over here we are sending winnings to winner 
-  transfer(2 * wager).to(outcome == A_WINS ? A : B);
+  outcome == A_WINS ? transfer(balance()).to(A) : transfer(balance()).to(B);
   commit();
 
   each([A, B], () => {
-    interact.seeOutcome(outcome);
-  })
+    interact.declareWinner(outcome, total);
+  });
+
   exit();
 });
