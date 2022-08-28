@@ -34,17 +34,17 @@ To enjoy this game, its best to open the app in two browser tabs, one for Alice 
 
 ### Launch the Game
 
-![Screenshot (01)](https://drive.google.com/file/d/1lFSn9EvEKibg6i3ruaDwR9kRp-gBfNcY/view?usp=sharing)  
+![project_1](https://user-images.githubusercontent.com/25069426/187094675-bcb1933b-f6b5-4d5a-885a-f1ff4429ea0b.jpg)
 
 ### Connect to your account
 
-![Screenshot (02)](https://drive.google.com/file/d/12gcTHLq7BbL6FnSUY5NKgC_lpxq4aRbo/view?usp=sharing)  
+![project_2](https://user-images.githubusercontent.com/25069426/187094693-ba96087d-e3a1-4693-bd3a-961e7a137892.jpg)
 
 
 ### Optionally fund your account from a faucet or skip
 
-![Screenshot (03)](https://drive.google.com/file/d/1Dl72bcg3X8U3PMDH_49XJXIF38XXMGya/view?usp=sharing)  
- 
+![project_3](https://user-images.githubusercontent.com/25069426/187094702-78f711fd-760c-4d07-9a80-7dc51af63693.jpg)
+
 
 
 For getting this far, I urge you to checkout the [Reach Docs](https://docs.reach.sh) and play around with building smart contract and DApps
