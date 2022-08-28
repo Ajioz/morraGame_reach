@@ -34,16 +34,16 @@ To enjoy this game, its best to open the app in two browser tabs, one for Alice 
 
 ### Launch the Game
 
-![project_1](https://user-images.githubusercontent.com/25069426/187094675-bcb1933b-f6b5-4d5a-885a-f1ff4429ea0b.jpg)
+![project_1](https://user-images.githubusercontent.com/25069426/187095288-dbdfcd44-29e9-4153-82ee-2c13d5719e37.jpg)
 
 ### Connect to your account
 
-![project_2](https://user-images.githubusercontent.com/25069426/187094693-ba96087d-e3a1-4693-bd3a-961e7a137892.jpg)
+![project_2](https://user-images.githubusercontent.com/25069426/187095300-f3887e27-322e-44c8-934e-6ce7a8c4786e.jpg)
 
 
 ### Optionally fund your account from a faucet or skip
 
-![project_3](https://user-images.githubusercontent.com/25069426/187094702-78f711fd-760c-4d07-9a80-7dc51af63693.jpg)
+![project_3](https://user-images.githubusercontent.com/25069426/187095305-53cc3f28-e26c-4f77-b284-82dda09e4acb.jpg)
 
 
 
